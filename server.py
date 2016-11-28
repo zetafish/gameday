@@ -11,8 +11,15 @@ from flask import Flask, request
 import logging
 import argparse
 import urllib2
+import boto3
 
-# logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.INFO)
+#logger = logging.getLogger('server')
+
+# dynamodb
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('unicorn')
+
 
 # parsing arguments
 PARSER = argparse.ArgumentParser(description='Client message processor')
@@ -28,12 +35,20 @@ API_BASE = ARGS.API_base
 
 APP = Flask(__name__)
 
+
+def store_message(msg):
+    table.put_item(Item=msg)
+
+
+
 # creating flask route for type argument
 @APP.route('/', methods=['GET', 'POST'])
 def main_handler():
     """
     main routing for requests
     """
+    #import pdb; pdb.set_trace()
+    
     if request.method == 'POST':
         return process_message(request.get_json())
     else:
@@ -75,15 +90,19 @@ def process_message(msg):
         #   url -> api_base/jFgwN4GvTB1D2QiQsQ8GHwQUbbIJBS6r7ko9RVthXCJqAiobMsLRmsuwZRQTlOEW
         #   headers -> x-gameday-token = API_token
         #   data -> EaXA2G8cVTj1LGuRgv8ZhaGMLpJN2IKBwC5eYzAPNlJwkN4Qu1DIaI3H1zyUdf1H5NITR
+        
         APP.logger.debug("ID: %s" % msg_id)
         APP.logger.debug("RESULT: %s" % result)
         url = API_BASE + '/' + msg_id
         print url
         print result
-        req = urllib2.Request(url, data=result, headers={'x-gameday-token':ARGS.API_token})
+        req = urllib2.Request(url, data=result, headers={
+            'x-gameday-token':ARGS.API_token,
+            'content-type': 'application/text'
+        })
         resp = urllib2.urlopen(req)
         resp.close()
-        print response
+        print resp
 
     return 'OK'
 
@@ -92,7 +111,8 @@ if __name__ == "__main__":
     # By default, we disable threading for "debugging" purposes.
     # This will cause the app to block requests, which means that you miss out on some points,
     # and fail ALB healthchecks, but whatever I know I'm getting fired on Friday.
-    APP.run(host="0.0.0.0", port="80")
+    APP.debug = True
+    APP.run(host="0.0.0.0", port=5000)
     
     # Use this to enable threading:
     # APP.run(host="0.0.0.0", port="80", threaded=True)
