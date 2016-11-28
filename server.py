@@ -22,27 +22,40 @@ table = dynamodb.Table('unicorn')
 
 
 # parsing arguments
-PARSER = argparse.ArgumentParser(description='Client message processor')
-PARSER.add_argument('API_token', help="the individual API token given to your team")
-PARSER.add_argument('API_base', help="the base URL for the game API")
+#PARSER = argparse.ArgumentParser(description='Client message processor')
+#PARSER.add_argument('API_token', help="the individual API token given to your team")
+#PARSER.add_argument('API_base', help="the base URL for the game API")
 
-ARGS = PARSER.parse_args()
+api_token = 'adc1a51632'
+api_base  ='https://dashboard.cash4code.net/score' 
+
+
+#ARGS = PARSER.parse_args()
 
 # defining global vars
 MESSAGES = {} # A dictionary that contains message parts
-API_BASE = ARGS.API_base
+#API_BASE = ARGS.API_base
 # 'https://csm45mnow5.execute-api.us-west-2.amazonaws.com/dev'
 
-APP = Flask(__name__)
-
+app = Flask(__name__)
 
 def store_message(msg):
     table.put_item(Item=msg)
 
+def resolve(msg_id, total):
+    data = ''
+    for i in range(total):
+        part = table.get_item(Key={'Id': msg_id, 'PartNumber': i})
+        if not part:
+            return None
+        
+        data = data + part['Data']
 
+    return data
+        
 
 # creating flask route for type argument
-@APP.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def main_handler():
     """
     main routing for requests
@@ -91,13 +104,13 @@ def process_message(msg):
         #   headers -> x-gameday-token = API_token
         #   data -> EaXA2G8cVTj1LGuRgv8ZhaGMLpJN2IKBwC5eYzAPNlJwkN4Qu1DIaI3H1zyUdf1H5NITR
         
-        APP.logger.debug("ID: %s" % msg_id)
-        APP.logger.debug("RESULT: %s" % result)
-        url = API_BASE + '/' + msg_id
+        app.logger.debug("ID: %s" % msg_id)
+        app.logger.debug("RESULT: %s" % result)
+        url = api_base + '/' + msg_id
         print url
         print result
         req = urllib2.Request(url, data=result, headers={
-            'x-gameday-token':ARGS.API_token,
+            'x-gameday-token': api_token,
             'content-type': 'application/text'
         })
         resp = urllib2.urlopen(req)
@@ -106,13 +119,13 @@ def process_message(msg):
 
     return 'OK'
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    # By default, we disable threading for "debugging" purposes.
-    # This will cause the app to block requests, which means that you miss out on some points,
-    # and fail ALB healthchecks, but whatever I know I'm getting fired on Friday.
-    APP.debug = True
-    APP.run(host="0.0.0.0", port=5000)
+#     # By default, we disable threading for "debugging" purposes.
+#     # This will cause the app to block requests, which means that you miss out on some points,
+#     # and fail ALB healthchecks, but whatever I know I'm getting fired on Friday.
+#     app.debug = True
+#     app.run(host="0.0.0.0", port=5000)
     
-    # Use this to enable threading:
-    # APP.run(host="0.0.0.0", port="80", threaded=True)
+#     # Use this to enable threading:
+#     # app.run(host="0.0.0.0", port="80", threaded=True)
