@@ -17,8 +17,9 @@ import boto3
 #logger = logging.getLogger('server')
 
 # dynamodb
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('unicorn')
+dynamodb = boto3.resource('dynamodb', region_name='eu-central-1')
+pending = dynamodb.Table('pending')
+published = dynamodb.Table('published')
 
 
 # parsing arguments
@@ -40,21 +41,36 @@ MESSAGES = {} # A dictionary that contains message parts
 app = Flask(__name__)
 
 def store_message(msg):
-    table.put_item(Item=msg)
+    pending.put_item(Item=msg)
 
 def resolve(msg):
     msg_id = msg['Id']
     total = msg['TotalNumbers']
     data = ''
     for i in range(total):
-        part = table.get_item(Key={'Id': msg_id, 'PartNumber': i})
-        if not part:
+        response = pending.get_item(Key={'Id': msg_id, 'PartNumber': i})
+        if 'Item' not in response:
             return None
-        
+
+        part = response['Item']
         data = data + part['Data']
 
     return data
-        
+
+def mark_published(msg_id):
+    data = {
+        'Id': msg_id
+    }
+    published.put_item(data)
+
+    
+def is_published(msg_id):
+    key = {
+        'Id': msg_id
+    }
+    response = published.get_item(Key=key)
+    return 'Item' in response
+
 
 # creating flask route for type argument
 @app.route('/', methods=['GET', 'POST'])
@@ -69,6 +85,7 @@ def main_handler():
     else:
         return get_message_stats()
 
+    
 def get_message_stats():
     """
     provides a status that players can check
@@ -78,18 +95,23 @@ def get_message_stats():
 
 
 def process_message_dynamodb(msg):
-    # TODO ignore if already published
-    store_message(msg)
     msg_id = msg['Id']
+    
+    if is_published(msg_id):
+        return
+    
+    store_message(msg)
     data = resolve(msg)
     if data is not None:
         publish(msg_id, data)
-
+        mark_published(msg_id)
+        
 
 def publish(msg_id, data):
     url = api_base + '/' + msg_id
     headers = {'x-gameday-token': api_token}
-    req = urllib2.Request(url, data=data, headers=headers)
+    urllib2.Request(url, data=data, headers=headers)
+    
 
     
 def process_message(msg):
@@ -137,13 +159,9 @@ def process_message(msg):
 
     return 'OK'
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     # By default, we disable threading for "debugging" purposes.
-#     # This will cause the app to block requests, which means that you miss out on some points,
-#     # and fail ALB healthchecks, but whatever I know I'm getting fired on Friday.
-#     app.debug = True
-#     app.run(host="0.0.0.0", port=5000)
+    api_base = 'http://localhost:8000'
+    app.debug = True
+    app.run(host="0.0.0.0", port=5000)
     
-#     # Use this to enable threading:
-#     # app.run(host="0.0.0.0", port="80", threaded=True)
