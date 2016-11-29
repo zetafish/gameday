@@ -25,6 +25,18 @@ published = dynamodb.Table('published')
 api_token = 'adc1a51632'
 api_base  ='https://dashboard.cash4code.net/score' 
 
+
+def handler(event, context):
+    records = event['Records']
+    for r in records:
+        event_name = r['eventName']
+        if event_name == 'INSERT':
+            d = r['dynamodb']
+            keys = data['Keys']
+            new = data['NewImage']
+            
+
+
 # defining global vars
 MESSAGES = {} # A dictionary that contains message parts
 
@@ -101,12 +113,4 @@ def publish(msg_id, data):
     url = api_base + '/' + msg_id
     headers = {'x-gameday-token': api_token}
     urllib2.Request(url, data=data, headers=headers)
-    
-
-
-if __name__ == "__main__":
-
-    api_base = 'http://localhost:8000'
-    app.debug = True
-    app.run(host="0.0.0.0", port=5000)
     
