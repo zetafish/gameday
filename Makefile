@@ -1,4 +1,4 @@
-ZIP=kinesis.zip
+ZIP=kinesis.zip web.zip
 
 .DEFAULT_GOAL=build
 
@@ -16,6 +16,9 @@ kinesis.zip: kinesis.py
 	zip $@ $<
 
 publish.zip: publish.py
+	zip $@ $<
+
+web.zip: web.py
 	zip $@ $<
 
 build: $(ZIP)

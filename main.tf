@@ -20,13 +20,13 @@ resource "aws_lambda_function" "kinesis" {
   source_code_hash = "${base64sha256(file("kinesis.zip"))}"
 }
 
-# resource "aws_lambda_function" "publish" {
-#   filename = "publish.zip"
-#   function_name = "publish"
-#   role = "${var.role}"
-#   handler = "publish.handler"
-#   runtime = "python2.7"
-# }
+resource "aws_lambda_function" "web" {
+  filename = "web.zip"
+  function_name = "web"
+  role = "${var.role}"
+  handler = "web.handler"
+  runtime = "python2.7"
+}
 
 resource "aws_kinesis_stream" "default" {
   name = "area51"
