@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import urllib2
 import boto3
+import json
 
 
 # dynamodb
@@ -18,7 +19,7 @@ def store_message(msg):
 
 def resolve(msg):
     msg_id = msg['Id']
-    total = msg['TotalNumbers']
+    total = msg['TotalParts']
     data = ''
     for i in range(total):
         response = pending.get_item(Key={'Id': msg_id, 'PartNumber': i})
@@ -57,8 +58,10 @@ def process_message(msg):
 
 
 def handler(event, context):
-    op = event['operation']
-    if op == 'create':
-        payload = event.get('payload')
-        msg = json.loads(payload)
-        process_message(msg)
+    msg = event
+    process_message(msg)
+    # op = event['operation']
+    # if op == 'create':
+    #     payload = event.get('payload')
+    #     msg = json.loads(payload)
+    #     process_message(msg)

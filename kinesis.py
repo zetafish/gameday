@@ -34,7 +34,7 @@ def mark_published(msg_id):
 
 def resolve(msg):
     msg_id = msg['Id']
-    total = msg['TotalNumbers']
+    total = msg['TotalParts']
     data = ''
     for i in range(total):
         response = pending.get_item(Key={'Id': msg_id, 'PartNumber': i})

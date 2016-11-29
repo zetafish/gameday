@@ -28,6 +28,11 @@ resource "aws_lambda_function" "web" {
   runtime = "python2.7"
 }
 
+# resource "aws_api_gateway_rest_api" "MyDemoAPI" {
+#   name = "MyDemoAPI"
+#   description = "This is my API for demonstration purposes"
+# }
+
 resource "aws_kinesis_stream" "default" {
   name = "area51"
   shard_count = 1
