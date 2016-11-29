@@ -6,3 +6,9 @@ install:
 
 run:
 	gunicorn -k gevent -w 4 -b :5000 --timeout 180 server:app
+
+kinesis.zip: kinesis.py
+	zip kinesis.zip kinesis.py
+
+deploy: kinesis.zip
+	terraform apply
