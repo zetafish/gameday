@@ -42,7 +42,9 @@ app = Flask(__name__)
 def store_message(msg):
     table.put_item(Item=msg)
 
-def resolve(msg_id, total):
+def resolve(msg):
+    msg_id = msg['Id']
+    total = msg['TotalNumbers']
     data = ''
     for i in range(total):
         part = table.get_item(Key={'Id': msg_id, 'PartNumber': i})
@@ -60,10 +62,10 @@ def main_handler():
     """
     main routing for requests
     """
-    #import pdb; pdb.set_trace()
-    
     if request.method == 'POST':
-        return process_message(request.get_json())
+        msg = request.get_json()
+        process_message_dynamodb(msg)
+        return "OK"
     else:
         return get_message_stats()
 
@@ -74,6 +76,22 @@ def get_message_stats():
     msg_count = len(MESSAGES.keys())
     return "There are %d messages in the MESSAGES dictionary" % msg_count
 
+
+def process_message_dynamodb(msg):
+    # TODO ignore if already published
+    store_message(msg)
+    msg_id = msg['Id']
+    data = resolve(msg)
+    if data is not None:
+        publish(msg_id, data)
+
+
+def publish(msg_id, data):
+    url = api_base + '/' + msg_id
+    headers = {'x-gameday-token': api_token}
+    req = urllib2.Request(url, data=data, headers=headers)
+
+    
 def process_message(msg):
     """
     processes the messages by combining and appending the kind code
