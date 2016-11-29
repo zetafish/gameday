@@ -21,22 +21,12 @@ dynamodb = boto3.resource('dynamodb', region_name='eu-central-1')
 pending = dynamodb.Table('pending')
 published = dynamodb.Table('published')
 
-
-# parsing arguments
-#PARSER = argparse.ArgumentParser(description='Client message processor')
-#PARSER.add_argument('API_token', help="the individual API token given to your team")
-#PARSER.add_argument('API_base', help="the base URL for the game API")
-
+# api
 api_token = 'adc1a51632'
 api_base  ='https://dashboard.cash4code.net/score' 
 
-
-#ARGS = PARSER.parse_args()
-
 # defining global vars
 MESSAGES = {} # A dictionary that contains message parts
-#API_BASE = ARGS.API_base
-# 'https://csm45mnow5.execute-api.us-west-2.amazonaws.com/dev'
 
 app = Flask(__name__)
 
@@ -61,7 +51,7 @@ def mark_published(msg_id):
     data = {
         'Id': msg_id
     }
-    published.put_item(data)
+    published.put_item(Item=data)
 
     
 def is_published(msg_id):
